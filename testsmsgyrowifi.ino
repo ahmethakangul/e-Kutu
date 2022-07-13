@@ -1,15 +1,16 @@
-const String PHONE = "+905347715420";
+const String PHONE = "+905555555555"; // mesaj gönderilecek telefon numaranız
+
+// gerekli kütüphaneler
 #include "deneyap.h"
 #include "lsm6dsm.h"
-//#include <WiFiESP32.h>
 #include <WiFi.h>
 #include <WiFiAP.h>
 #include <WiFiClient.h>
 #include <HTTPClient.h>
 
 int durum= 0;
-const char* ssid = "Rose 2.4"; 
-const char* password = "35603560";
+const char* ssid = "Rose 2.4"; //wifi adı
+const char* password = "35603560"; // wifi şifresi
 WiFiServer server(80);
 
 int rxPin = D3;
@@ -19,6 +20,8 @@ HardwareSerial sim800(1);
 double konum;
 
 LSM6DSM IMU;  
+
+// google earth'ten alınmış örnek konum
 double lat = 38.394520;
 double lng = 27.096154;
 
@@ -27,28 +30,23 @@ int switchpin=D4;
 int buzzer = D9;
 int i;
 
-int karbonmonoksit = 0 ;
-int esikDegeri = 600; //Gaz eşik değerini belirliyoruz.
-int deger=0; //Sensörden okunan değer
-
-
 
 void setup() {
-  pinMode(buzzer,OUTPUT);
-  pinMode(switchpin,INPUT);
+    pinMode(buzzer,OUTPUT);
+    pinMode(switchpin,INPUT);
   
   Serial.begin(9600);
-  IMU.begin();
+    IMU.begin();
   Serial.println("esp32 serial initialize");
   
-  sim800.begin(BAUD_RATE, SERIAL_8N1, rxPin, txPin);
+   sim800.begin(BAUD_RATE, SERIAL_8N1, rxPin, txPin);
   Serial.println("SIM800L serial initialize");
   
-  sim800.print("AT+CMGF=1\r"); //SMS text mode
-  //Serial.begin(115200);
-  delay(3000);
- Serial.println();
-    Serial.println(); Serial.print("Connecting to "); Serial.println(ssid);WiFi.begin(ssid, password);    
+    sim800.print("AT+CMGF=1\r"); //SMS text modu
+    delay(3000);
+  Serial.println();
+  Serial.println(); Serial.print("Connecting to "); Serial.println(ssid);WiFi.begin(ssid, password);    
+  
    while (WiFi.status() != WL_CONNECTED) 
     {
       delay(500);
@@ -57,7 +55,7 @@ void setup() {
        
     Serial.println(""); Serial.println("WiFi connected");
      
-    // server baslatılıyor
+    // server başlatılıyor
     server.begin();
     Serial.println("Server started");
      
@@ -71,11 +69,7 @@ void setup() {
     Serial.print(WiFi.gatewayIP());
     Serial.println("/");
     
-    Serial.println(WiFi.RSSI()); //sinyal gücü desibel cinsinden -70 ve daha düşük (sıfıra yakın) olması iyi
-
-
-   // smsat("ahmet hakan");
-
+    Serial.println(WiFi.RSSI()); //sinyal gücü desibel cinsinden -70 ve daha düşük (sıfıra yakın) olması iyi 
 }
 
 void loop() 
@@ -90,31 +84,32 @@ void loop()
    if (switchoku==0) durum=1;
    
   
-   
+   //kendi ayarladığımız döngü,switch aktif olduğunda çalışacak şekilde, buradan fonksiyonları istediğimiz sırayla çağırabiliriz
    if(durum==1)
    {
-    COkontrol();
-    konumat();
-    webgonder();
-    ara();
-    sinyal();
-    durum=0;
+      konumat();
+      webgonder();
+      ara();
+      sinyal();
+      durum=0;
    }
    
 //delay(20000);
 }
 
+
+
 void smsat(String text)
 {
-    sim800.print("AT+CMGF=1\r");
-    delay(1000);
-    sim800.print("AT+CMGS=\""+PHONE+"\"\r");
-    delay(1000);
-    sim800.print(text);
-    delay(100);
-    sim800.write(0x1A); //ascii code for ctrl-26 //  sim800.println((char)26); //ascii code for ctrl-26
-    delay(1000);
-    Serial.println("SMS Sent Successfully.");
+      sim800.print("AT+CMGF=1\r");
+      delay(1000);
+      sim800.print("AT+CMGS=\""+PHONE+"\"\r");
+      delay(1000);
+      sim800.print(text);
+      delay(100);
+      sim800.write(0x1A); //ascii code for ctrl-26 //  sim800.println((char)26); //ascii code for ctrl-26
+      delay(1000);
+      Serial.println("SMS Sent Successfully.");
 }
 
 /****************************************************************/
@@ -143,10 +138,10 @@ void konumat()
 
 void ara()
 {
-  sim800.println("ATD"+ PHONE +";"); // AT command for dialing up the number
-  delay(30000);
-  sim800.println("ATH"); // AT command for dialing up the number
-  
+      sim800.println("ATD"+ PHONE +";"); // çağrı gönderme
+      delay(30000);
+      sim800.println("ATH"); // çağrıyı sonlandırma kodu
+ //telefon çağrısı yapıldı 30 saniye (30000 ms) boyunca çağrı devam etti ve kapandı
   }
 
 /****************************************************************/  
@@ -163,22 +158,14 @@ void webgonder()
                   }
                     client.stop();// close the connection:
             }
-              // aşağıdaki kod NodeMCU'nun bir web sitesine (server'a) istek gönderme ve gelei yazma kodu
+              // aşağıdaki kod NodeMCU'nun Deneyap kartı'ın bir web sitesine (server'a) istek gönderme ve geleni yazma kodu
               
                 HTTPClient http;
-                
+                // http begin'deki linki kendi locahost'unuzun ip'sine göre kendi php html kodunuza göre aktabilirsiniz .
+                // farklı http post yöntemleri bulunmaktadır youtube da http get post arduino diye aratarak ilgili içerikleri bulabilirsiniz. 
+                // kendi php-html kodumu klosöre bırakacağım anlamadığınız yer olursa ulaşabilirsiniz.
                 http.begin("http://192.168.1.106/e-Kutu/ekle.php?deger1=Aktif&deger2="+ String(lat,6)+","+ String(lng,6)+"&deger3=İdeal");
-                 
-                 /*if (karbonmonoksit=0)
-                { 
-                http.begin("http://192.168.1.105/e-Kutu/ekle.php?deger1=Aktif&deger2="+ String(lat)+","+ String(lng)+"&deger3=İdeal");
-                }
-                
-               if (karbonmonoksit=1)
-                { 
-                http.begin("http://192.168.1.105/e-Kutu/ekle.php?deger1=Aktif&deger2="+ String(lat)+","+ String(lng)+"&deger3=AcilDurum");
-                }
-                */
+   
                 int httpResponseCode = http.GET();            
                  if (httpResponseCode>0) 
                     {
@@ -199,7 +186,7 @@ void webgonder()
   
 /****************************************************************/
 
-  void sinyal()
+void sinyal()
   {
      for(i=0;i<50;i++){
       digitalWrite(buzzer,1);
@@ -209,12 +196,3 @@ void webgonder()
    }
 
 /****************************************************************/
-
-  void COkontrol()
-  {
-    
-   deger = analogRead(A5); //Sensörden analog değer okuyoruz.
-   Serial.println(deger);
-   if (deger>esikDegeri)karbonmonoksit=1;
-      
-   }
